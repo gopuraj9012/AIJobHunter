@@ -1,0 +1,17 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-wal
+*.db-shm
+*.user
+*.suo
+*.sln.docstates
+.vs/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store

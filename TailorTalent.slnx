@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TailorTalent.Api/TailorTalent.Api.csproj" />
+  </Folder>
+</Solution>

@@ -30,6 +30,13 @@ builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IJobDescriptionService, JobDescriptionService>();
 builder.Services.AddScoped<ITailoringSessionService, TailoringSessionService>();
 
+// AI Integration service - HttpClient configured to call the FastAPI AI service
+builder.Services.AddHttpClient<IAiIntegrationService, AiIntegrationService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration.GetValue<string>("AiService:BaseUrl") ?? "http://localhost:8000");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
 // CORS - allow Angular frontend
 builder.Services.AddCors(options =>
 {

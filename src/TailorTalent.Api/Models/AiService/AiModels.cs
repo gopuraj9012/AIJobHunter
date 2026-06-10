@@ -23,19 +23,28 @@ public class JobAnalysis
 /// <summary>
 /// Request body for POST /tailor-resume
 /// </summary>
-public class TailorResumeRequest
+public class TailoringRequest
 {
-    [JsonPropertyName("keywords")]
-    public List<string> Keywords { get; set; } = new();
+    [JsonPropertyName("resume_text")]
+    public string ResumeText { get; set; } = string.Empty;
 
-    [JsonPropertyName("required_skills")]
-    public List<string> RequiredSkills { get; set; } = new();
+    [JsonPropertyName("job_analysis")]
+    public JobAnalysis JobAnalysis { get; set; } = new();
+}
 
-    [JsonPropertyName("preferred_skills")]
-    public List<string> PreferredSkills { get; set; } = new();
+/// <summary>
+/// Score breakdown by category.
+/// </summary>
+public class ScoreBreakdown
+{
+    [JsonPropertyName("skills")]
+    public int Skills { get; set; }
 
-    [JsonPropertyName("core_responsibilities")]
-    public List<string> CoreResponsibilities { get; set; } = new();
+    [JsonPropertyName("experience")]
+    public int Experience { get; set; }
+
+    [JsonPropertyName("education")]
+    public int Education { get; set; }
 }
 
 /// <summary>
@@ -46,14 +55,23 @@ public class TailoringResult
     [JsonPropertyName("match_score")]
     public int MatchScore { get; set; }
 
+    [JsonPropertyName("match_score_breakdown")]
+    public ScoreBreakdown MatchScoreBreakdown { get; set; } = new();
+
     [JsonPropertyName("missing_keywords")]
     public List<string> MissingKeywords { get; set; } = new();
+
+    [JsonPropertyName("high_impact_missing_keywords")]
+    public List<string> HighImpactMissingKeywords { get; set; } = new();
 
     [JsonPropertyName("strengths")]
     public List<string> Strengths { get; set; } = new();
 
     [JsonPropertyName("weaknesses")]
     public List<string> Weaknesses { get; set; } = new();
+
+    [JsonPropertyName("experience_bullet_suggestions")]
+    public List<string> ExperienceBulletSuggestions { get; set; } = new();
 
     [JsonPropertyName("improvement_suggestions")]
     public List<Suggestion> ImprovementSuggestions { get; set; } = new();

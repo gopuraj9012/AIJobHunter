@@ -36,10 +36,9 @@ public class AiIntegrationService : IAiIntegrationService
 
     public async Task<JobAnalysis> AnalyzeJobAsync(string jdText, CancellationToken ct = default)
     {
-        var url = $"/analyze-job?jd_text={Uri.EscapeDataString(jdText)}";
-        _logger.LogInformation("Calling AI service: POST {Url}", url);
+        _logger.LogInformation("Calling AI service: POST /analyze-job");
 
-        var response = await _httpClient.PostAsync(url, null, ct);
+        var response = await _httpClient.PostAsJsonAsync("/analyze-job", new { jd_text = jdText }, ct);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<JobAnalysis>(cancellationToken: ct);
@@ -48,10 +47,15 @@ public class AiIntegrationService : IAiIntegrationService
 
     public async Task<TailoringResult> TailorResumeAsync(string resumeText, JobAnalysis analysis, CancellationToken ct = default)
     {
-        var url = $"/tailor-resume?resume_text={Uri.EscapeDataString(resumeText)}";
-        _logger.LogInformation("Calling AI service: POST {Url}", url);
+        var request = new TailoringRequest
+        {
+            ResumeText = resumeText,
+            JobAnalysis = analysis
+        };
 
-        var response = await _httpClient.PostAsJsonAsync(url, analysis, ct);
+        _logger.LogInformation("Calling AI service: POST /tailor-resume");
+
+        var response = await _httpClient.PostAsJsonAsync("/tailor-resume", request, ct);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<TailoringResult>(cancellationToken: ct);

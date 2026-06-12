@@ -108,15 +108,24 @@ public class TailoringController : ControllerBase
             .Select(s => new ImprovementSuggestion(s.Section, s.Feedback, s.SuggestedRewrite))
             .ToList();
 
+        var breakdown = new ScoreBreakdownDto(
+            tailoringResult.MatchScoreBreakdown.Skills,
+            tailoringResult.MatchScoreBreakdown.Experience,
+            tailoringResult.MatchScoreBreakdown.Education
+        );
+
         return Ok(new TailorResumeResponse(
             session.Id,
             tailoringResult.ImprovementSuggestions.Count > 0
                 ? tailoringResult.ImprovementSuggestions[0].SuggestedRewrite
                 : resume.RawContent,
             tailoringResult.MatchScore,
+            breakdown,
             tailoringResult.MissingKeywords,
+            tailoringResult.HighImpactMissingKeywords,
             tailoringResult.Strengths,
             tailoringResult.Weaknesses,
+            tailoringResult.ExperienceBulletSuggestions,
             suggestions
         ));
     }
@@ -152,6 +161,7 @@ public class TailoringController : ControllerBase
             coverLetter.TailoringNotes
         ));
     }
+}
 
     private ObjectResult PaymentRequired(string message)
     {

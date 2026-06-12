@@ -33,6 +33,9 @@ builder.Services.AddScoped<ITailoringSessionService, TailoringSessionService>();
 // Resume parsing service
 builder.Services.AddScoped<IResumeParsingService, ResumeParsingService>();
 
+// Subscription & credit management service
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+
 // AI Integration service - HttpClient configured to call the FastAPI AI service
 builder.Services.AddHttpClient<IAiIntegrationService, AiIntegrationService>(client =>
 {

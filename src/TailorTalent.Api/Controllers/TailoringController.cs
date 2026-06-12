@@ -21,6 +21,7 @@ public class TailoringController : ControllerBase
         IJobDescriptionService jobDescriptionService,
         ITailoringSessionService sessionService,
         ISubscriptionService subscriptionService)
+        ITailoringSessionService sessionService)
     {
         _aiService = aiService;
         _resumeService = resumeService;

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TailorTalent.Api.Models;
+using TailorTalent.Api.Models.Subscription;
 
 namespace TailorTalent.Api.Data;
 
@@ -12,6 +13,11 @@ public class TailorTalentDbContext : DbContext
     public DbSet<Resume> Resumes => Set<Resume>();
     public DbSet<JobDescription> JobDescriptions => Set<JobDescription>();
     public DbSet<TailoringSession> TailoringSessions => Set<TailoringSession>();
+
+    // Subscription & Credits
+    public DbSet<UserSubscription> UserSubscriptions => Set<UserSubscription>();
+    public DbSet<UserCredits> UserCredits => Set<UserCredits>();
+    public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +76,29 @@ public class TailorTalentDbContext : DbContext
                   .WithMany(j => j.TailoringSessions)
                   .HasForeignKey(t => t.JobDescriptionId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSubscription configuration
+        modelBuilder.Entity<UserSubscription>(entity =>
+        {
+            entity.ToTable("UserSubscriptions");
+            entity.HasIndex(s => s.UserId).IsUnique();
+            entity.Property(s => s.Plan).HasConversion<int>();
+        });
+
+        // UserCredits configuration
+        modelBuilder.Entity<UserCredits>(entity =>
+        {
+            entity.ToTable("UserCredits");
+            entity.HasIndex(c => c.UserId).IsUnique();
+        });
+
+        // CreditTransaction configuration
+        modelBuilder.Entity<CreditTransaction>(entity =>
+        {
+            entity.ToTable("CreditTransactions");
+            entity.HasIndex(t => t.UserId);
+            entity.HasIndex(t => t.CreatedAt);
         });
     }
 }

@@ -13,17 +13,21 @@ public class TailoringController : ControllerBase
     private readonly IResumeService _resumeService;
     private readonly IJobDescriptionService _jobDescriptionService;
     private readonly ITailoringSessionService _sessionService;
+    private readonly ISubscriptionService _subscriptionService;
 
     public TailoringController(
         IAiIntegrationService aiService,
         IResumeService resumeService,
         IJobDescriptionService jobDescriptionService,
+        ITailoringSessionService sessionService,
+        ISubscriptionService subscriptionService)
         ITailoringSessionService sessionService)
     {
         _aiService = aiService;
         _resumeService = resumeService;
         _jobDescriptionService = jobDescriptionService;
         _sessionService = sessionService;
+        _subscriptionService = subscriptionService;
     }
 
     /// <summary>
@@ -60,6 +64,16 @@ public class TailoringController : ControllerBase
         var jobDescription = await _jobDescriptionService.GetByIdAsync(request.JobDescriptionId);
         if (jobDescription is null)
             return NotFound($"JobDescription with ID {request.JobDescriptionId} not found.");
+
+        // 2. Check credits - ensure user has sufficient balance
+        var status = await _subscriptionService.GetStatusAsync(resume.UserId);
+        if (!status.CanTailor)
+            return PaymentRequired($"Insufficient credits. User {resume.UserId} has {status.CreditsRemaining} credits remaining and is on the {status.PlanName} plan. Please upgrade or purchase more credits.");
+
+        // 3. Deduct a credit
+        var deducted = await _subscriptionService.DeductCreditAsync(resume.UserId, "Tailored resume");
+        if (!deducted)
+            return PaymentRequired("Failed to deduct credit. Please check your balance.");
 
         // 2. Analyze the job description
         var analysis = await _aiService.AnalyzeJobAsync(jobDescription.RawContent);
@@ -137,5 +151,10 @@ public class TailoringController : ControllerBase
             coverLetter.KeyPointsAddressed,
             coverLetter.TailoringNotes
         ));
+    }
+
+    private ObjectResult PaymentRequired(string message)
+    {
+        return StatusCode(402, new { error = message });
     }
 }

@@ -21,7 +21,6 @@ public class TailoringController : ControllerBase
         IJobDescriptionService jobDescriptionService,
         ITailoringSessionService sessionService,
         ISubscriptionService subscriptionService)
-        ITailoringSessionService sessionService)
     {
         _aiService = aiService;
         _resumeService = resumeService;
@@ -161,7 +160,6 @@ public class TailoringController : ControllerBase
             coverLetter.TailoringNotes
         ));
     }
-}
 
     private ObjectResult PaymentRequired(string message)
     {

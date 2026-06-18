@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -128,26 +128,26 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
                       <div class="form-row">
                         <mat-form-field appearance="outline">
                           <mat-label>Company</mat-label>
-                          <input matInput [formControl]="exp.get('company')" placeholder="Acme Corp" />
+                          <input matInput [formControl]="$any(exp.get('company'))" placeholder="Acme Corp" />
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                           <mat-label>Role</mat-label>
-                          <input matInput [formControl]="exp.get('role')" placeholder="Software Engineer" />
+                          <input matInput [formControl]="$any(exp.get('role'))" placeholder="Software Engineer" />
                         </mat-form-field>
                       </div>
                       <div class="form-row">
                         <mat-form-field appearance="outline">
                           <mat-label>Start Date</mat-label>
-                          <input matInput [formControl]="exp.get('startDate')" placeholder="Jan 2020" />
+                          <input matInput [formControl]="$any(exp.get('startDate'))" placeholder="Jan 2020" />
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                           <mat-label>End Date</mat-label>
-                          <input matInput [formControl]="exp.get('endDate')" placeholder="Present" />
+                          <input matInput [formControl]="$any(exp.get('endDate'))" placeholder="Present" />
                         </mat-form-field>
                       </div>
                       <mat-form-field appearance="outline">
                         <mat-label>Description</mat-label>
-                        <textarea matInput rows="3" [formControl]="exp.get('description')"
+                        <textarea matInput rows="3" [formControl]="$any(exp.get('description'))"
                           placeholder="Describe your responsibilities and achievements..."></textarea>
                       </mat-form-field>
                     </mat-card-content>
@@ -180,17 +180,17 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
                       <div class="form-row">
                         <mat-form-field appearance="outline">
                           <mat-label>School</mat-label>
-                          <input matInput [formControl]="edu.get('school')" placeholder="University" />
+                          <input matInput [formControl]="$any(edu.get('school'))" placeholder="University" />
                         </mat-form-field>
                         <mat-form-field appearance="outline">
                           <mat-label>Degree</mat-label>
-                          <input matInput [formControl]="edu.get('degree')" placeholder="B.S. Computer Science" />
+                          <input matInput [formControl]="$any(edu.get('degree'))" placeholder="B.S. Computer Science" />
                         </mat-form-field>
                       </div>
                       <div class="form-row">
                         <mat-form-field appearance="outline">
                           <mat-label>Graduation Year</mat-label>
-                          <input matInput [formControl]="edu.get('year')" placeholder="2024" />
+                          <input matInput [formControl]="$any(edu.get('year'))" placeholder="2024" />
                         </mat-form-field>
                       </div>
                     </mat-card-content>
@@ -338,6 +338,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
   `]
 })
 export class ResumeBuilderComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private snackBar = inject(MatSnackBar);
+
   isEditing = false;
   resumeId: string | null = null;
   jobDescription = '';
@@ -352,12 +357,7 @@ export class ResumeBuilderComponent implements OnInit {
   educations = this.fb.array<FormGroup>([]);
   skills = this.fb.array<string[]>([]);
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router,
-    private snackBar: MatSnackBar
-  ) {}
+  constructor() {}
 
   ngOnInit() {
     this.resumeId = this.route.snapshot.paramMap.get('id');

@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TailorTalent.Api.DTOs;
 using TailorTalent.Api.Services;
@@ -6,6 +8,7 @@ namespace TailorTalent.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class JobDescriptionsController : ControllerBase
 {
     private readonly IJobDescriptionService _jobDescriptionService;
@@ -16,14 +19,12 @@ public class JobDescriptionsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all job descriptions for a user.
+    /// Get all job descriptions for the authenticated user.
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JobDescriptionDto>>> GetAll([FromQuery] string userId)
+    public async Task<ActionResult<IEnumerable<JobDescriptionDto>>> GetAll()
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest("userId query parameter is required.");
-
+        var userId = User.GetUserId()!;
         var jobDescriptions = await _jobDescriptionService.GetAllAsync(userId);
         return Ok(jobDescriptions);
     }
@@ -47,7 +48,8 @@ public class JobDescriptionsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<JobDescriptionDto>> Create([FromBody] CreateJobDescriptionDto dto)
     {
-        var jd = await _jobDescriptionService.CreateAsync(dto);
+        var userId = User.GetUserId()!;
+        var jd = await _jobDescriptionService.CreateAsync(dto with { UserId = userId });
         return CreatedAtAction(nameof(GetById), new { id = jd.Id }, jd);
     }
 

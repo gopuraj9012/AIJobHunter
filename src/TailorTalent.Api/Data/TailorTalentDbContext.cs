@@ -14,6 +14,9 @@ public class TailorTalentDbContext : DbContext
     public DbSet<JobDescription> JobDescriptions => Set<JobDescription>();
     public DbSet<TailoringSession> TailoringSessions => Set<TailoringSession>();
 
+    // Users & Auth
+    public DbSet<User> Users => Set<User>();
+
     // Subscription & Credits
     public DbSet<UserSubscription> UserSubscriptions => Set<UserSubscription>();
     public DbSet<UserCredits> UserCredits => Set<UserCredits>();
@@ -99,6 +102,13 @@ public class TailorTalentDbContext : DbContext
             entity.ToTable("CreditTransactions");
             entity.HasIndex(t => t.UserId);
             entity.HasIndex(t => t.CreatedAt);
+        });
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasIndex(u => u.Email).IsUnique();
         });
     }
 }

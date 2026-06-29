@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TailorTalent.Api.DTOs;
 using TailorTalent.Api.Services;
@@ -6,6 +8,7 @@ namespace TailorTalent.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ResumesController : ControllerBase
 {
     private readonly IResumeService _resumeService;
@@ -16,14 +19,12 @@ public class ResumesController : ControllerBase
     }
 
     /// <summary>
-    /// Get all resumes for a user.
+    /// Get all resumes for the authenticated user.
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ResumeDto>>> GetAll([FromQuery] string userId)
+    public async Task<ActionResult<IEnumerable<ResumeDto>>> GetAll()
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest("userId query parameter is required.");
-
+        var userId = User.GetUserId()!;
         var resumes = await _resumeService.GetAllAsync(userId);
         return Ok(resumes);
     }
@@ -42,12 +43,13 @@ public class ResumesController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new resume.
+    /// Create a new resume for the authenticated user.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<ResumeDto>> Create([FromBody] CreateResumeDto dto)
     {
-        var resume = await _resumeService.CreateAsync(dto);
+        var userId = User.GetUserId()!;
+        var resume = await _resumeService.CreateAsync(dto with { UserId = userId });
         return CreatedAtAction(nameof(GetById), new { id = resume.Id }, resume);
     }
 

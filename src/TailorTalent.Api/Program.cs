@@ -1,4 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using TailorTalent.Api.Data;
 using TailorTalent.Api.Services;
 
@@ -9,6 +12,28 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(5111);
 });
+
+// JWT Authentication
+var jwtKey = builder.Configuration.GetValue<string>("Jwt:Key") ?? "TailorTalentSuperSecretKeyThatIsAtLeast32Bytes!";
+var jwtIssuer = builder.Configuration.GetValue<string>("Jwt:Issuer") ?? "TailorTalent";
+var jwtAudience = builder.Configuration.GetValue<string>("Jwt:Audience") ?? "TailorTalent";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Add controllers
 builder.Services.AddControllers()
@@ -29,6 +54,9 @@ builder.Services.AddDbContext<TailorTalentDbContext>(options =>
 builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IJobDescriptionService, JobDescriptionService>();
 builder.Services.AddScoped<ITailoringSessionService, TailoringSessionService>();
+
+// Auth service
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Resume parsing service
 builder.Services.AddScoped<IResumeParsingService, ResumeParsingService>();
@@ -69,6 +97,9 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowAngularFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

@@ -1,0 +1,42 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', Roboto, 'Helvetica Neue', sans-serif;
+  background-color: #f5f7fa;
+  color: #1a1a2e;
+}
+
+/* Dashboard layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-sidenav-container {
+  flex: 1;
+  display: flex;
+}
+
+.app-content {
+  padding: 24px;
+  flex: 1;
+}
+
+/* Card styling */
+.mat-mdc-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Button styling */
+.mat-mdc-raised-button.mat-primary {
+  border-radius: 8px;
+}
+
+/* Form field styling */
+.mat-mdc-form-field {
+  width: 100%;
+}

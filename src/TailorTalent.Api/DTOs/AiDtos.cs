@@ -15,13 +15,22 @@ public record TailorResumeRequest(
     string? Tone
 );
 
+public record ScoreBreakdownDto(
+    int Skills,
+    int Experience,
+    int Education
+);
+
 public record TailorResumeResponse(
     Guid SessionId,
     string TailoredContent,
     int AtsScore,
+    ScoreBreakdownDto AtsScoreBreakdown,
     List<string> MissingKeywords,
+    List<string> HighImpactMissingKeywords,
     List<string> Strengths,
     List<string> Weaknesses,
+    List<string> ExperienceBulletSuggestions,
     List<ImprovementSuggestion> ImprovementSuggestions
 );
 

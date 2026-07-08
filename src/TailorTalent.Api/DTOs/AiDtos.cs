@@ -41,3 +41,40 @@ public record CoverLetterGenerateResponse(
     List<string> KeyPointsAddressed,
     string TailoringNotes
 );
+
+public record ParseResumeRequestDto(string RawContent);
+
+public record ParseResumeResponse(
+    PersonalInfoDto? PersonalInfo,
+    string? Summary,
+    List<ExperienceItemDto>? Experience,
+    List<EducationItemDto>? Education,
+    List<string>? Skills
+);
+
+public record PersonalInfoDto(
+    string? Name,
+    string? Email,
+    string? Phone,
+    string? Location,
+    string? Linkedin,
+    string? Website
+);
+
+public record ExperienceItemDto(
+    string? Company,
+    string? Title,
+    string? Location,
+    string? StartDate,
+    string? EndDate,
+    string? Description,
+    List<string>? Highlights
+);
+
+public record EducationItemDto(
+    string? School,
+    string? Degree,
+    string? Location,
+    string? GraduationDate,
+    string? Description
+);

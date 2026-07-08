@@ -10,21 +10,23 @@ public class ResumeParsingController : ControllerBase
 {
     private readonly IResumeParsingService _parsingService;
     private readonly IResumeService _resumeService;
+    private readonly IAiIntegrationService _aiService;
 
     public ResumeParsingController(
         IResumeParsingService parsingService,
-        IResumeService resumeService)
+        IResumeService resumeService,
+        IAiIntegrationService aiService)
     {
         _parsingService = parsingService;
         _resumeService = resumeService;
+        _aiService = aiService;
     }
 
     /// <summary>
     /// Upload a resume file (PDF or DOCX) to extract text.
-    /// Returns the extracted text along with a preview.
     /// </summary>
     [HttpPost("extract")]
-    [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB limit
+    [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<ActionResult<ExtractTextResponse>> ExtractText(IFormFile file)
     {
         if (file == null || file.Length == 0)
@@ -48,7 +50,7 @@ public class ResumeParsingController : ControllerBase
     /// Upload a resume file (PDF or DOCX) and create a Resume entity.
     /// </summary>
     [HttpPost("upload")]
-    [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB limit
+    [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<ActionResult<ResumeDto>> UploadAndCreate(
         IFormFile file,
         [FromForm] string userId,
@@ -74,6 +76,39 @@ public class ResumeParsingController : ControllerBase
         ));
 
         return CreatedAtAction("GetById", "Resumes", new { id = resume.Id }, resume);
+    }
+
+    /// <summary>
+    /// Parse raw resume text into structured data using the AI service.
+    /// Converts raw extracted file text into structured JSON for form pre-filling.
+    /// </summary>
+    [HttpPost("parse")]
+    public async Task<ActionResult<ParseResumeResponse>> ParseResume([FromBody] ParseResumeRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RawContent))
+            return BadRequest("Raw resume text is required.");
+
+        var resumeData = await _aiService.ParseResumeAsync(request.RawContent);
+
+        return Ok(new ParseResumeResponse(
+            resumeData.PersonalInfo is not null
+                ? new PersonalInfoDto(
+                    resumeData.PersonalInfo.Name,
+                    resumeData.PersonalInfo.Email,
+                    resumeData.PersonalInfo.Phone,
+                    resumeData.PersonalInfo.Location,
+                    resumeData.PersonalInfo.Linkedin,
+                    resumeData.PersonalInfo.Website)
+                : null,
+            resumeData.Summary,
+            resumeData.Experience?.Select(e => new ExperienceItemDto(
+                e.Company, e.Title, e.Location, e.StartDate, e.EndDate, e.Description, e.Highlights
+            )).ToList(),
+            resumeData.Education?.Select(e => new EducationItemDto(
+                e.School, e.Degree, e.Location, e.GraduationDate, e.Description
+            )).ToList(),
+            resumeData.Skills
+        ));
     }
 }
 

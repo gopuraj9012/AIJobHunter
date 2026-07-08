@@ -21,6 +21,11 @@ public interface IAiIntegrationService
     /// Generates a cover letter for a resume and job description.
     /// </summary>
     Task<CoverLetterResponse> GenerateCoverLetterAsync(string resumeText, string jobDescription, string tone = "professional", CancellationToken ct = default);
+
+    /// <summary>
+    /// Parses a raw resume text into structured data using the AI service.
+    /// </summary>
+    Task<ResumeData> ParseResumeAsync(string resumeText, CancellationToken ct = default);
 }
 
 public class AiIntegrationService : IAiIntegrationService
@@ -74,5 +79,17 @@ public class AiIntegrationService : IAiIntegrationService
 
         var result = await response.Content.ReadFromJsonAsync<CoverLetterResponse>(cancellationToken: ct);
         return result ?? new CoverLetterResponse();
+    }
+
+    public async Task<ResumeData> ParseResumeAsync(string resumeText, CancellationToken ct = default)
+    {
+        var request = new ParseResumeRequest { ResumeText = resumeText };
+        _logger.LogInformation("Calling AI service: POST /parse-resume");
+
+        var response = await _httpClient.PostAsJsonAsync("/parse-resume", request, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ResumeData>(cancellationToken: ct);
+        return result ?? new ResumeData();
     }
 }

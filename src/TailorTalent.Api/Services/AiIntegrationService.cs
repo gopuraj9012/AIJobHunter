@@ -21,6 +21,11 @@ public interface IAiIntegrationService
     /// Generates a cover letter for a resume and job description.
     /// </summary>
     Task<CoverLetterResponse> GenerateCoverLetterAsync(string resumeText, string jobDescription, string tone = "professional", CancellationToken ct = default);
+
+    /// <summary>
+    /// Parses a raw resume text into structured data using the AI service.
+    /// </summary>
+    Task<ResumeData> ParseResumeAsync(string resumeText, CancellationToken ct = default);
 }
 
 public class AiIntegrationService : IAiIntegrationService

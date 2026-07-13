@@ -1,0 +1,39 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-wal
+*.db-shm
+*.user
+*.suo
+*.sln.docstates
+.vs/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node / Angular
+node_modules/
+dist/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular CLI
+.tmp
+.cache
+.angular/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets
+.env

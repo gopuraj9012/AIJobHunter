@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'resumes', component: ResumeListComponent },
   { path: 'resumes/new', component: ResumeBuilderComponent },
+  { path: 'resumes/upload', component: ResumeBuilderComponent },
   { path: 'resumes/:id/edit', component: ResumeBuilderComponent },
   { path: '**', redirectTo: '/dashboard' },
 ];

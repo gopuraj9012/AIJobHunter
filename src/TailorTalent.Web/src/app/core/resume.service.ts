@@ -56,15 +56,33 @@ export interface Education {
 
 export interface TailorRequest {
   resumeId: string;
-  jobDescription: string;
+  jobDescriptionId: string;
+  tone?: string;
 }
 
 export interface TailorResponse {
-  optimizedResume: ResumeDto;
-  suggestions: string[];
-  matchedKeywords: string[];
+  sessionId: string;
+  tailoredContent: string;
+  atsScore: number;
+  atsScoreBreakdown: ScoreBreakdown;
   missingKeywords: string[];
-  matchScore: number;
+  highImpactMissingKeywords: string[];
+  strengths: string[];
+  weaknesses: string[];
+  experienceBulletSuggestions: string[];
+  improvementSuggestions: ImprovementSuggestion[];
+}
+
+export interface ScoreBreakdown {
+  skills: number;
+  experience: number;
+  education: number;
+}
+
+export interface ImprovementSuggestion {
+  section: string;
+  feedback: string;
+  suggestedRewrite: string;
 }
 
 @Injectable({
@@ -75,35 +93,46 @@ export class ResumeService {
 
   constructor(private http: HttpClient) {}
 
+  /** JWT token stored by the auth flow (localStorage key shared with future auth service). */
+  private get authToken(): string | null {
+    return localStorage.getItem('tailortalent.token');
+  }
+
+  /** Builds headers with the Bearer token when present (backend uses [Authorize]). */
+  private authHeaders(): { Authorization?: string } {
+    const token = this.authToken;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   /** Get all resumes for the current user */
   getResumes(userId: string = 'default-user'): Observable<ResumeDto[]> {
     const params = new HttpParams().set('userId', userId);
-    return this.http.get<ResumeDto[]>(`${this.apiUrl}/resumes`, { params });
+    return this.http.get<ResumeDto[]>(`${this.apiUrl}/resumes`, { params, headers: this.authHeaders() });
   }
 
   /** Get a specific resume by ID */
   getResume(id: string): Observable<ResumeDto> {
-    return this.http.get<ResumeDto>(`${this.apiUrl}/resumes/${id}`);
+    return this.http.get<ResumeDto>(`${this.apiUrl}/resumes/${id}`, { headers: this.authHeaders() });
   }
 
   /** Create a new resume */
   createResume(dto: CreateResumeDto): Observable<ResumeDto> {
-    return this.http.post<ResumeDto>(`${this.apiUrl}/resumes`, dto);
+    return this.http.post<ResumeDto>(`${this.apiUrl}/resumes`, dto, { headers: this.authHeaders() });
   }
 
   /** Update an existing resume (PATCH to match backend) */
   updateResume(id: string, dto: UpdateResumeDto): Observable<ResumeDto> {
-    return this.http.patch<ResumeDto>(`${this.apiUrl}/resumes/${id}`, dto);
+    return this.http.patch<ResumeDto>(`${this.apiUrl}/resumes/${id}`, dto, { headers: this.authHeaders() });
   }
 
   /** Delete a resume */
   deleteResume(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/resumes/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/resumes/${id}`, { headers: this.authHeaders() });
   }
 
-  /** Tailor a resume with AI */
+  /** Tailor a resume with AI — matches POST /api/tailoring/tailor */
   tailorResume(request: TailorRequest): Observable<TailorResponse> {
-    return this.http.post<TailorResponse>(`${this.apiUrl}/resumes/tailor`, request);
+    return this.http.post<TailorResponse>(`${this.apiUrl}/tailoring/tailor`, request, { headers: this.authHeaders() });
   }
 
   /** Helper: serialise form sections to JSON for the API */

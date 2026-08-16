@@ -9,9 +9,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ResumeService, ResumeSections } from '../core/resume.service';
+import { ParsingService, UploadAndParseResult } from '../core/parsing.service';
+import { ResumeUploadComponent } from './resume-upload.component';
 
 @Component({
   selector: 'app-resume-builder',
@@ -27,9 +30,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatIconModule,
     MatDividerModule,
     MatChipsModule,
-    MatSnackBarModule,
     MatTabsModule,
     MatProgressBarModule,
+    ResumeUploadComponent,
   ],
   template: `
     <div class="resume-builder">
@@ -39,14 +42,30 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
           <p>Build and tailor your resume with AI-powered suggestions</p>
         </div>
         <div class="header-actions">
-          <button mat-stroked-button (click)="analyzeJobDescription()" [disabled]="!jobDescription">
+          <button mat-stroked-button (click)="analyzeJobDescription()" [disabled]="!jobDescription || saving">
             <mat-icon>auto_awesome</mat-icon>
             Analyze with AI
           </button>
         </div>
       </header>
 
-      <div class="builder-layout">
+      <!-- Resume Upload (new resumes only, until parsed or skipped) -->
+      <div class="upload-section" *ngIf="showUpload">
+        <app-resume-upload
+          (resumeParsed)="onResumeParsed($event)"
+          (skipUpload)="showUpload = false">
+        </app-resume-upload>
+        <div class="upload-or">
+          <mat-divider></mat-divider>
+          <span>or</span>
+          <mat-divider></mat-divider>
+        </div>
+        <button mat-button color="primary" (click)="showUpload = false">
+          Start from scratch
+        </button>
+      </div>
+
+      <div class="builder-layout" *ngIf="!showUpload">
         <!-- Job Description Panel -->
         <mat-card class="jd-panel">
           <mat-card-header>
@@ -230,10 +249,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
           </mat-tab-group>
 
           <mat-card-actions align="end" class="form-actions">
-            <button mat-stroked-button routerLink="/resumes">Cancel</button>
-            <button mat-raised-button color="primary" (click)="saveResume()" [disabled]="!isFormValid()">
+            <button mat-stroked-button routerLink="/resumes" [disabled]="saving">Cancel</button>
+            <button mat-raised-button color="primary" (click)="saveResume()" [disabled]="!isFormValid() || saving">
               <mat-icon>save</mat-icon>
-              Save Resume
+              {{ saving ? 'Saving...' : 'Save Resume' }}
             </button>
           </mat-card-actions>
         </mat-card>
@@ -259,6 +278,29 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     .page-header p {
       margin: 0;
       color: #666;
+    }
+    .upload-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .upload-section app-resume-upload {
+      width: 100%;
+      max-width: 640px;
+    }
+    .upload-or {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 640px;
+      color: #999;
+      font-size: 0.85rem;
+    }
+    .upload-or mat-divider {
+      flex: 1;
     }
     .builder-layout {
       display: grid;
@@ -342,10 +384,13 @@ export class ResumeBuilderComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
+  private resumeService = inject(ResumeService);
 
   isEditing = false;
   resumeId: string | null = null;
   jobDescription = '';
+  showUpload = true;
+  saving = false;
 
   // Form controls
   fullName = this.fb.control('', Validators.required);
@@ -362,9 +407,117 @@ export class ResumeBuilderComponent implements OnInit {
   ngOnInit() {
     this.resumeId = this.route.snapshot.paramMap.get('id');
     this.isEditing = !!this.resumeId;
-    if (this.isEditing) {
-      // TODO: Load resume data from API
+    this.showUpload = !this.isEditing;
+    if (this.isEditing && this.resumeId) {
+      this.loadResume(this.resumeId);
     }
+  }
+
+  /** Load an existing resume from the API and populate the form. */
+  private loadResume(id: string) {
+    this.resumeService.getResume(id).subscribe({
+      next: (resume) => {
+        this.applySectionsJson(resume.parsedSectionsJson);
+        this.snackBar.open('Resume loaded', 'Close', { duration: 2000 });
+      },
+      error: () => {
+        this.snackBar.open('Failed to load resume from server', 'Close', { duration: 4000 });
+      },
+    });
+  }
+
+  /** Map saved sections JSON (ResumeSections shape) onto the form controls. */
+  private applySectionsJson(json: string | null) {
+    if (!json) return;
+    const sections = this.resumeService.parseSections(json);
+    if (!sections) return;
+    this.fullName.setValue(sections.fullName ?? '');
+    this.email.setValue(sections.email ?? '');
+    this.phone.setValue(sections.phone ?? '');
+    this.linkedin.setValue(sections.linkedin ?? '');
+    this.portfolio.setValue(sections.portfolio ?? '');
+    this.experiences.clear();
+    for (const exp of sections.experiences ?? []) {
+      this.pushExperience(exp.company, exp.role, exp.startDate ?? '', exp.endDate ?? '', exp.description ?? '');
+    }
+    this.educations.clear();
+    for (const edu of sections.educations ?? []) {
+      this.pushEducation(edu.school, edu.degree, edu.year ?? '');
+    }
+    this.skills.clear();
+    for (const skill of sections.skills ?? []) {
+      if (skill?.trim()) this.skills.push(this.fb.control(skill.trim()));
+    }
+  }
+
+  /**
+   * Upload → AI parse completed: pre-fill all four form tabs with the parsed data.
+   * The upload endpoint already created the Resume entity server-side, so the
+   * builder switches to edit mode for that resume id.
+   */
+  onResumeParsed(result: UploadAndParseResult) {
+    const parsed = result.parsed;
+
+    if (result.resume?.id) {
+      this.resumeId = result.resume.id;
+      this.isEditing = true;
+    }
+
+    const info = parsed.personalInfo;
+    if (info) {
+      this.fullName.setValue(info.name ?? '');
+      this.email.setValue(info.email ?? '');
+      this.phone.setValue(info.phone ?? '');
+      this.linkedin.setValue(info.linkedin ?? '');
+      this.portfolio.setValue(info.website ?? '');
+    }
+
+    this.experiences.clear();
+    for (const exp of parsed.experience ?? []) {
+      const descParts = [exp.description ?? '', ...(exp.highlights ?? [])].filter(
+        (p) => p && p.trim()
+      );
+      this.pushExperience(
+        exp.company ?? '',
+        exp.title ?? '',
+        exp.startDate ?? '',
+        exp.endDate ?? '',
+        descParts.join('\n')
+      );
+    }
+
+    this.educations.clear();
+    for (const edu of parsed.education ?? []) {
+      this.pushEducation(edu.school ?? '', edu.degree ?? '', edu.graduationDate ?? '');
+    }
+
+    this.skills.clear();
+    for (const skill of parsed.skills ?? []) {
+      if (skill?.trim()) this.skills.push(this.fb.control(skill.trim()));
+    }
+
+    this.showUpload = false;
+    this.snackBar.open('Resume parsed! Review and customize the sections below.', 'Close', { duration: 4000 });
+  }
+
+  private pushExperience(company: string, role: string, startDate: string, endDate: string, description: string) {
+    const group = this.fb.group({
+      company: [company, Validators.required],
+      role: [role, Validators.required],
+      startDate: [startDate],
+      endDate: [endDate],
+      description: [description],
+    });
+    this.experiences.push(group);
+  }
+
+  private pushEducation(school: string, degree: string, year: string) {
+    const group = this.fb.group({
+      school: [school, Validators.required],
+      degree: [degree, Validators.required],
+      year: [year],
+    });
+    this.educations.push(group);
   }
 
   get keywordCount(): number {
@@ -379,13 +532,7 @@ export class ResumeBuilderComponent implements OnInit {
   }
 
   addExperience() {
-    this.experiences.push(this.fb.group({
-      company: ['', Validators.required],
-      role: ['', Validators.required],
-      startDate: [''],
-      endDate: [''],
-      description: ['']
-    }));
+    this.pushExperience('', '', '', '', '');
   }
 
   removeExperience(index: number) {
@@ -393,11 +540,7 @@ export class ResumeBuilderComponent implements OnInit {
   }
 
   addEducation() {
-    this.educations.push(this.fb.group({
-      school: ['', Validators.required],
-      degree: ['', Validators.required],
-      year: ['']
-    }));
+    this.pushEducation('', '', '');
   }
 
   removeEducation(index: number) {
@@ -422,29 +565,56 @@ export class ResumeBuilderComponent implements OnInit {
     return this.fullName.valid && this.email.valid;
   }
 
+  /** Collect the current form values into the ResumeSections shape used by the API. */
+  private collectSections(): ResumeSections {
+    return {
+      fullName: this.fullName.value ?? '',
+      email: this.email.value ?? '',
+      phone: this.phone.value ?? '',
+      linkedin: this.linkedin.value ?? '',
+      portfolio: this.portfolio.value ?? '',
+      experiences: this.experiences.value ?? [],
+      educations: this.educations.value ?? [],
+      skills: this.skills.value.map((s) => s ?? '') ?? [],
+    };
+  }
+
+  /** Persist the resume: update when an id exists (upload-created or edit), create otherwise. */
   saveResume() {
     if (!this.isFormValid()) return;
 
-    const resumeData = {
-      fullName: this.fullName.value,
-      email: this.email.value,
-      phone: this.phone.value,
-      linkedin: this.linkedin.value,
-      portfolio: this.portfolio.value,
-      experiences: this.experiences.value,
-      educations: this.educations.value,
-      skills: this.skills.value,
-      jobDescription: this.jobDescription,
-    };
+    this.saving = true;
+    const sections = this.collectSections();
+    const parsedJson = this.resumeService.serialiseSections(sections);
+    const title = sections.fullName?.trim() || 'Untitled Resume';
+    const userId = localStorage.getItem('tailortalent.userId') ?? 'default-user';
 
-    console.log('Saving resume:', resumeData);
-    // TODO: Call API to save resume
+    const request$ = this.resumeId
+      ? this.resumeService.updateResume(this.resumeId, {
+          title,
+          parsedSectionsJson: parsedJson,
+        })
+      : this.resumeService.createResume({
+          userId,
+          title,
+          rawContent: parsedJson,
+        });
 
-    this.snackBar.open(
-      this.isEditing ? 'Resume updated!' : 'Resume created!',
-      'Close',
-      { duration: 3000 }
-    );
+    request$.subscribe({
+      next: () => {
+        this.saving = false;
+        this.snackBar.open(this.isEditing ? 'Resume updated!' : 'Resume created!', 'Close', { duration: 3000 });
+        this.router.navigate(['/resumes']);
+      },
+      error: (err) => {
+        this.saving = false;
+        const message =
+          err?.status === 401
+            ? 'Please log in to save your resume.'
+            : 'Failed to save resume. Please try again.';
+        this.snackBar.open(message, 'Close', { duration: 5000 });
+      },
+    });
   }
 
   analyzeJobDescription() {
@@ -452,7 +622,7 @@ export class ResumeBuilderComponent implements OnInit {
       this.snackBar.open('Please paste a job description first', 'Close', { duration: 3000 });
       return;
     }
-    // TODO: Call AI analysis API
+    // TODO: Call AI analysis API (POST /api/tailoring/analyze)
     this.snackBar.open('AI analysis started...', 'Close', { duration: 2000 });
   }
 }

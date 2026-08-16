@@ -90,12 +90,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/openapi/v1.json", "TailorTalent API v1");
-    c.RoutePrefix = string.Empty;
-});
-
 app.UseCors("AllowAngularFrontend");
 
 app.UseAuthentication();

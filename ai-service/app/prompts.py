@@ -60,3 +60,22 @@ Output the result in valid JSON format with the following keys:
 - key_points_addressed: List of specific requirements from the JD that were highlighted.
 - tailoring_notes: Brief explanation of why certain experiences were emphasized.
 """
+
+RESUME_PARSING_PROMPT = """
+You are an expert recruiter and resume parser.
+Your task is to take unstructured text from a resume and convert it into a clean, structured JSON format.
+Extract the following information:
+- Personal Info (Name, Email, Phone, Location, LinkedIn, Website)
+- Professional Summary
+- Experience (Company, Title, Location, Start Date, End Date, Description, Highlights)
+- Education (School, Degree, Location, Graduation Date, Description)
+- Skills (List of technical and professional skills)
+- Projects
+- Certifications
+
+Guidelines:
+1. Standardize dates to "Month YYYY" or "YYYY" format where possible.
+2. If End Date is not found, use "Present".
+3. Split experience bullet points into the 'highlights' list.
+4. Output ONLY valid JSON.
+"""

@@ -1,8 +1,10 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+
 class JobAnalysisRequest(BaseModel):
     jd_text: str
+
 
 class JobAnalysis(BaseModel):
     keywords: List[str] = Field(..., description="List of ATS-critical terms.")
@@ -10,15 +12,18 @@ class JobAnalysis(BaseModel):
     preferred_skills: List[str] = Field(..., description="List of nice-to-have skills.")
     core_responsibilities: List[str] = Field(..., description="Summary of the main tasks.")
 
+
 class Suggestion(BaseModel):
     section: str = Field(..., description="The resume section (e.g., Summary, Experience, Skills).")
     feedback: str = Field(..., description="Specific, actionable advice.")
     suggested_rewrite: Optional[str] = Field(None, description="Optional tailored rewrite of the section.")
 
+
 class ScoreBreakdown(BaseModel):
     skills: int = Field(..., ge=0, le=100, description="Score for skill alignment.")
     experience: int = Field(..., ge=0, le=100, description="Score for experience relevance.")
     education: int = Field(..., ge=0, le=100, description="Score for educational requirements.")
+
 
 class TailoringResult(BaseModel):
     match_score: int = Field(..., ge=0, le=100, description="Overall alignment score.")
@@ -30,16 +35,60 @@ class TailoringResult(BaseModel):
     experience_bullet_suggestions: List[str] = Field(..., description="3-5 specific bullet point suggestions for the Experience section.")
     improvement_suggestions: List[Suggestion] = Field(..., description="Actionable advice for each section.")
 
+
 class TailoringRequest(BaseModel):
     resume_text: str
     job_analysis: JobAnalysis
+
 
 class CoverLetterRequest(BaseModel):
     resume_text: str
     job_description: str
     tone: Optional[str] = "professional"
 
+
 class CoverLetterResponse(BaseModel):
     content: str
     key_points_addressed: List[str]
     tailoring_notes: str
+
+
+class ParseResumeRequest(BaseModel):
+    resume_text: str = Field(..., min_length=1, description="Raw resume text to parse into structured data.")
+
+
+class PersonalInfo(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    linkedin: Optional[str] = None
+    website: Optional[str] = None
+
+
+class ExperienceItem(BaseModel):
+    company: Optional[str] = None
+    title: Optional[str] = None
+    location: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    description: Optional[str] = None
+    highlights: List[str] = []
+
+
+class EducationItem(BaseModel):
+    school: Optional[str] = None
+    degree: Optional[str] = None
+    location: Optional[str] = None
+    graduation_date: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ResumeData(BaseModel):
+    personal_info: Optional[PersonalInfo] = None
+    summary: Optional[str] = None
+    experience: List[ExperienceItem] = []
+    education: List[EducationItem] = []
+    skills: List[str] = []
+    projects: List[dict] = []
+    certifications: List[dict] = []

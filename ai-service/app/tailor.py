@@ -1,8 +1,11 @@
 import os
 import json
 from typing import List, Optional
-from .models import JobAnalysis, TailoringResult, Suggestion, ScoreBreakdown
-from .prompts import KEYWORD_EXTRACTION_PROMPT, GAP_ANALYSIS_PROMPT
+from .models import (
+    JobAnalysis, TailoringResult, Suggestion, ScoreBreakdown, 
+    ResumeData, PersonalInfo, ExperienceItem, EducationItem
+)
+from .prompts import KEYWORD_EXTRACTION_PROMPT, GAP_ANALYSIS_PROMPT, RESUME_PARSING_PROMPT
 
 class AIService:
     def __init__(self):
@@ -19,7 +22,6 @@ class AIService:
 
     async def analyze_job(self, jd_text: str) -> JobAnalysis:
         if not self.client:
-            # Mock behavior
             return JobAnalysis(
                 keywords=["Python", "AWS", "Docker", "REST API", "Microservices"],
                 required_skills=["5+ years Python", "Cloud architecture", "Unit testing"],
@@ -40,7 +42,6 @@ class AIService:
 
     async def tailor_resume(self, resume_text: str, job_analysis: JobAnalysis) -> TailoringResult:
         if not self.client:
-            # Mock behavior
             suggestions = [
                 Suggestion(
                     section="Skills",
@@ -85,5 +86,53 @@ class AIService:
         )
         data = json.loads(response.choices[0].message.content)
         return TailoringResult(**data)
+
+    async def parse_resume(self, resume_text: str) -> ResumeData:
+        if not self.client:
+            # High-quality mock for development
+            return ResumeData(
+                personal_info=PersonalInfo(
+                    name="John Doe",
+                    email="john.doe@example.com",
+                    phone="123-456-7890",
+                    location="New York, NY",
+                    linkedin="linkedin.com/in/johndoe",
+                    website="johndoe.dev"
+                ),
+                summary="Experienced Software Engineer with a passion for building scalable web applications.",
+                experience=[
+                    ExperienceItem(
+                        company="Tech Corp",
+                        title="Senior Engineer",
+                        location="San Francisco, CA",
+                        start_date="Jan 2020",
+                        end_date="Present",
+                        description="Leading the backend team.",
+                        highlights=["Architected microservices", "Improved performance by 50%"]
+                    )
+                ],
+                education=[
+                    EducationItem(
+                        school="State University",
+                        degree="BS in Computer Science",
+                        location="City, ST",
+                        graduation_date="May 2018",
+                        description="Focused on Algorithms."
+                    )
+                ],
+                skills=["Python", "Go", "AWS", "Kubernetes", "React"]
+            )
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": RESUME_PARSING_PROMPT},
+                {"role": "user", "content": resume_text}
+            ],
+            response_format={"type": "json_object"}
+        )
+        data = json.loads(response.choices[0].message.content)
+        known = {k: v for k, v in data.items() if k in ResumeData.model_fields}
+        return ResumeData(**known)
 
 ai_service = AIService()
